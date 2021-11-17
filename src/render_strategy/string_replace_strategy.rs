@@ -5,25 +5,31 @@ pub fn string_replace_strategy(template: String, context: Context) -> String {
 
     for (_key, value) in &context.vars {
         let key = &format!("{{{{ {} }}}}", _key);
-        match value {
+        output = match value {
             TemplateVariable::Displayable(value) => {
-                output = output.replace(key, &format!("{}", value));
-            }
-            TemplateVariable::SubContext(_) => {}
+                output.replace(key, &format!("{}", value))
+            },
+            TemplateVariable::SubContext(value) => {
+                parse_sub_context(value)
+            },
             TemplateVariable::Boolean(value) => {
-                output = output.replace(key, &format!("{}", value));
-            }
+                output.replace(key, &format!("{}", value))
+            },
             TemplateVariable::Double(value) => {
-                output = output.replace(key, &format!("{}", value));
-            }
+                output.replace(key, &format!("{}", value))
+            },
             TemplateVariable::Integer(value) => {
-                output = output.replace(key, &format!("{}", value));
-            }
+                output.replace(key, &format!("{}", value))
+            },
             TemplateVariable::String(value) => {
-                output = output.replace(key, &format!("{}", value));
-            }
+                output.replace(key, &format!("{}", value))
+            },
         };
     }
 
     output
+}
+
+fn parse_sub_context(context: &Context) -> String {
+    "".into()
 }
