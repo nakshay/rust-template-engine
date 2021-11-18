@@ -1,3 +1,3 @@
-mod string_replace_strategy;
+mod string_replace;
 
-pub use string_replace_strategy::string_replace_strategy;
+pub use string_replace::string_replace;

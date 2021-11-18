@@ -16,13 +16,13 @@ pub fn render(
 mod tests {
     use super::*;
     use pair::{Pair, PairGenerator};
-    use render_strategy::string_replace_strategy;
+    use render_strategy;
     use std::fmt::{Display, Formatter, Result};
 
     #[test]
     fn can_pass_a_string_to_the_template_and_print_it() {
         let context = Context::with(vec![Pair::of("name", "Rust")]);
-        let output = render(s("name: {{ name }}"), context, string_replace_strategy);
+        let output = render(s("name: {{ name }}"), context, render_strategy::string_replace);
         assert_eq!(output, s("name: Rust"));
     }
 
@@ -32,7 +32,7 @@ mod tests {
         let output = render(
             s("is awesome: {{ is awesome }}"),
             context,
-            string_replace_strategy,
+            render_strategy::string_replace,
         );
         assert_eq!(output, s("is awesome: true"));
     }
@@ -46,7 +46,7 @@ mod tests {
         let output = render(
             s("displayable object: {{ displayable object }}"),
             context,
-            string_replace_strategy,
+            render_strategy::string_replace,
         );
         assert_eq!(output, s("displayable object: bar"));
     }
@@ -57,7 +57,7 @@ mod tests {
         let output = render(
             s("a double: {{ a double }}"),
             context,
-            string_replace_strategy,
+            render_strategy::string_replace,
         );
         assert_eq!(output, s("a double: 1.2"));
     }
@@ -74,7 +74,7 @@ mod tests {
         let output = render(
             s("a map: {{ a map.nested.nested nested }}"),
             context,
-            string_replace_strategy,
+            render_strategy::string_replace,
         );
         assert_eq!(output, s("a map: foo"));
     }
@@ -85,9 +85,89 @@ mod tests {
         let output = render(
             s("an integer: {{ an integer }}"),
             context,
-            string_replace_strategy,
+            render_strategy::string_replace,
         );
         assert_eq!(output, s("an integer: 100"));
+    }
+
+    #[test]
+    fn can_print_multiple_variables_inside_the_same_template() {
+        let context = Context::with(vec![
+            Pair::of(
+                "context",
+                Context::with(vec![
+                    Pair::of(
+                        "context",
+                        Context::with(vec![
+                            Pair::of("displayable", get_displayable_object()),
+                            Pair::of("bool", true),
+                            Pair::of("f64", 1.23),
+                            Pair::of("isize", 123456),
+                            Pair::of("string", "foo"),
+                            Pair::of("string reference", "bar"),
+                        ]),
+                    ),
+                    Pair::of("displayable", get_displayable_object()),
+                    Pair::of("bool", true),
+                    Pair::of("f64", 1.23),
+                    Pair::of("isize", 123456),
+                    Pair::of("string", "foo"),
+                    Pair::of("string reference", "bar"),
+                ]),
+            ),
+            Pair::of("displayable", get_displayable_object()),
+            Pair::of("bool", true),
+            Pair::of("f64", 1.23),
+            Pair::of("isize", 123456),
+            Pair::of("string", "foo"),
+            Pair::of("string reference", "bar"),
+        ]);
+        let template = s("
+            displayable: {{ displayable }}
+            bool: {{ bool }}
+            f64: {{ f64 }}
+            isize: {{ isize }}
+            string: {{ string }}
+            string reference: {{ string reference }}
+
+            context.displayable: {{ context.displayable }}
+            context.bool: {{ context.bool }}
+            context.f64: {{ context.f64 }}
+            context.isize: {{ context.isize }}
+            context.string: {{ context.string }}
+            context.string reference: {{ context.string reference }}
+
+            context.context.displayable: {{ context.context.displayable }}
+            context.context.bool: {{ context.context.bool }}
+            context.context.f64: {{ context.context.f64 }}
+            context.context.isize: {{ context.context.isize }}
+            context.context.string: {{ context.context.string }}
+            context.context.string reference: {{ context.context.string reference }}
+        ");
+        let output = render(template, context, render_strategy::string_replace);
+        let expected_output = s("
+            displayable: bar
+            bool: true
+            f64: 1.23
+            isize: 123456
+            string: foo
+            string reference: bar
+
+            context.displayable: bar
+            context.bool: true
+            context.f64: 1.23
+            context.isize: 123456
+            context.string: foo
+            context.string reference: bar
+
+            context.context.displayable: bar
+            context.context.bool: true
+            context.context.f64: 1.23
+            context.context.isize: 123456
+            context.context.string: foo
+            context.context.string reference: bar
+        ");
+        assert_eq!(output, expected_output);
     }
 
     struct CanBeDisplayed {
