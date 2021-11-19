@@ -1,6 +1,9 @@
 use crate::template::Context;
 
 pub fn interpreter(template: String, context: Context) -> String {
+    let mut tokenizer = Tokenizer::new("".into());
+    tokenizer.tokenize();
+    let _tokens = tokenizer.get_tokens();
     "".into()
 }
 
@@ -25,60 +28,88 @@ impl Tokenizer {
         &self.tokens
     }
 
-    fn tokenize(&mut self) {
-        self.reset_state();
-
-        while self.position < self.template.len() {
-            self.position += 1;
-
-            if self.context == TokenizerContext::TemplateContent {
-                self.read_template_content();
-                continue;
-            }
-
-            if self.template[self.position - 1] == '{' && self.template[self.position] == '{' {
-                self.tokens.push(Token::PrintVariableStart);
-                continue;
-            }
-        }
-    }
-
     fn reset_state(&mut self) {
         self.context = TokenizerContext::TemplateContent;
         self.position = 0;
         self.tokens = Vec::new();
     }
 
-    fn read_template_content(&mut self) {
-        let start_position = self.position - 1;
+    fn tokenize(&mut self) {
+        self.reset_state();
 
-        while self.template[start_position] != '{' && self.template[self.position] != '{' {
+        while self.position < self.template.len() {
+            if self.position == self.template.len() - 1 {
+                break;
+            }
+
+            self.position += 1;
+            match self.context {
+                TokenizerContext::TemplateContent => self.template_content(),
+                TokenizerContext::PrintVariable => self.print_variable(),
+            };
+        }
+    }
+
+    fn template_content(&mut self) {
+        let start_position = if self.position == 1 { 0 } else { self.position };
+        let mut eof = false;
+        while self.template[self.position - 1] != '{' || self.template[self.position] != '{' {
+            if self.position == self.template.len() - 1 {
+                eof = true;
+                break;
+            }
+
             self.position += 1;
         }
 
+        let end_position = if eof {
+            self.position
+        } else {
+            self.position - 2
+        };
+        let content = self.build_string_from_positions(start_position, end_position);
+        self.tokens.push(Token::Content(content));
         self.context = TokenizerContext::PrintVariable;
-        let content = self.build_template_content_string(start_position);
-        self.tokens.push(Token::TemplateContent(content));
     }
 
-    fn build_template_content_string(&self, mut position: usize) -> String {
-        let mut content = String::new();
+    fn print_variable(&mut self) {
+        if self.template[self.position - 1] == '{' && self.template[self.position] == '{' {
+            return;
+        }
 
-        while position < self.position {
+        self.read_variable_name();
+    }
+
+    fn build_string_from_positions(&self, start: usize, end: usize) -> String {
+        let mut content = String::new();
+        let mut position = start;
+
+        while position <= end {
             content.push(self.template[position]);
             position += 1;
         }
 
         content
     }
+
+    fn read_variable_name(&mut self) {
+        let start_position = self.position;
+
+        while self.template[self.position - 1] != '}' || self.template[self.position] != '}' {
+            self.position += 1;
+        }
+
+        let variable_name = self.build_string_from_positions(start_position, self.position - 2);
+        self.tokens
+            .push(Token::Variable(variable_name.trim().into()));
+        self.context = TokenizerContext::TemplateContent;
+    }
 }
 
 #[derive(Debug, PartialEq)]
 enum Token {
-    PrintVariableStart,
-    PrintVariableEnd,
-    VariableName(String),
-    TemplateContent(String),
+    Variable(String),
+    Content(String),
 }
 
 #[derive(Debug, PartialEq)]
@@ -100,11 +131,9 @@ mod tests {
         assert_eq!(
             *tokens,
             vec![
-                Token::TemplateContent("Hello ".into()),
-                Token::PrintVariableStart,
-                Token::VariableName("person_name".into()),
-                Token::PrintVariableEnd,
-                Token::TemplateContent("!".into()),
+                Token::Content("Hello ".into()),
+                Token::Variable("person_name".into()),
+                Token::Content("!".into()),
             ]
         );
     }
