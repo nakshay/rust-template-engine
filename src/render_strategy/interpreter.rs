@@ -1,74 +1,111 @@
-use crate::template::{Context};
+use crate::template::Context;
 
 pub fn interpreter(template: String, context: Context) -> String {
-    Interpreter::new(template.chars(), context).parse()
+    "".into()
 }
 
-struct Interpreter<T: Iterator<Item = char>> {
-    template: T,
-    context: Context,
-    previous_character: Option<char>,
-    current_token: Option<Token>,
+struct Tokenizer {
+    template: Vec<char>,
+    position: usize,
+    tokens: Vec<Token>,
+    context: TokenizerContext,
 }
 
-impl<T: Iterator<Item = char>> Interpreter<T> {
-    fn new(template: T, context: Context) -> Self {
-        Interpreter {
-            template,
-            context,
-            previous_character: None,
-            current_token: None,
+impl Tokenizer {
+    fn new(template: String) -> Self {
+        Tokenizer {
+            template: template.chars().collect(),
+            position: 0,
+            tokens: Vec::new(),
+            context: TokenizerContext::TemplateContent,
         }
     }
 
-    fn parse(&self) -> String {
-        "".into()
+    fn get_tokens(&self) -> &Vec<Token> {
+        &self.tokens
     }
 
-    fn next_token(&mut self) {
-        let mut character = self.template.next().unwrap();
+    fn tokenize(&mut self) {
+        self.reset_state();
 
-        if let None = self.previous_character {
-            self.previous_character = Some(character);
-            character = self.template.next().unwrap();
+        while self.position < self.template.len() {
+            self.position += 1;
+
+            if self.context == TokenizerContext::TemplateContent {
+                self.read_template_content();
+                continue;
+            }
+
+            if self.template[self.position - 1] == '{' && self.template[self.position] == '{' {
+                self.tokens.push(Token::PrintVariableStart);
+                continue;
+            }
+        }
+    }
+
+    fn reset_state(&mut self) {
+        self.context = TokenizerContext::TemplateContent;
+        self.position = 0;
+        self.tokens = Vec::new();
+    }
+
+    fn read_template_content(&mut self) {
+        let start_position = self.position - 1;
+
+        while self.template[start_position] != '{' && self.template[self.position] != '{' {
+            self.position += 1;
         }
 
-        let last_two_chars = format!("{}{}", self.previous_character.unwrap(), character);
-        self.current_token = match last_two_chars.as_str() {
-            "{{" => Some(Token::PrintBracesOpening),
-            _ => None,
-        };
+        self.context = TokenizerContext::PrintVariable;
+        let content = self.build_template_content_string(start_position);
+        self.tokens.push(Token::TemplateContent(content));
     }
 
-    fn current_token(&self) -> &Option<Token> {
-        &self.current_token
+    fn build_template_content_string(&self, mut position: usize) -> String {
+        let mut content = String::new();
+
+        while position < self.position {
+            content.push(self.template[position]);
+            position += 1;
+        }
+
+        content
     }
 }
 
 #[derive(Debug, PartialEq)]
 enum Token {
-    PrintBracesOpening,
+    PrintVariableStart,
+    PrintVariableEnd,
+    VariableName(String),
+    TemplateContent(String),
 }
 
-fn token_value(token: Token) -> String {
-    match token { 
-        Token::PrintBracesOpening => "{{".into(),
-    }
+#[derive(Debug, PartialEq)]
+enum TokenizerContext {
+    TemplateContent,
+    PrintVariable,
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::pair::{Pair, PairGenerator};
 
     #[test]
-    fn can_detect_a_token() {
-        let template = String::from("{{");
-        let template_iterator = template.chars();
-        let context = Context::with(vec![Pair::of("x", "x")]);
-        let mut interpreter = Interpreter::new(template_iterator, context);
-        interpreter.next_token();
-        let current_token = interpreter.current_token().as_ref().unwrap();
-        assert_eq!(current_token, &Token::PrintBracesOpening);
+    fn can_detect_tokens() {
+        let template = String::from("Hello {{ person_name }}!");
+        let mut tokenizer = Tokenizer::new(template);
+        tokenizer.tokenize();
+        let tokens = tokenizer.get_tokens();
+        assert_eq!(
+            *tokens,
+            vec![
+                Token::TemplateContent("Hello ".into()),
+                Token::PrintVariableStart,
+                Token::VariableName("person_name".into()),
+                Token::PrintVariableEnd,
+                Token::TemplateContent("!".into()),
+            ]
+        );
     }
 }
