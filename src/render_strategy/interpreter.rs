@@ -62,13 +62,16 @@ impl Tokenizer {
             self.position += 1;
         }
 
-        let end_position = if eof {
-            self.position
-        } else {
-            self.position - 2
-        };
-        let content = self.build_string_from_positions(start_position, end_position);
-        self.tokens.push(Token::Content(content));
+        if self.position > 1 {
+            let end_position = if eof {
+                self.position
+            } else {
+                self.position - 2
+            };
+            let content = self.build_string_from_positions(start_position, end_position);
+            self.tokens.push(Token::Content(content));
+        }
+
         self.context = TokenizerContext::PrintVariable;
     }
 
@@ -124,17 +127,62 @@ mod tests {
 
     #[test]
     fn can_detect_tokens() {
-        let template = String::from("Hello {{ person_name }}!");
-        let mut tokenizer = Tokenizer::new(template);
-        tokenizer.tokenize();
-        let tokens = tokenizer.get_tokens();
-        assert_eq!(
-            *tokens,
+        assert_template_has_tokens(
+            "Hello {{ person_name }}!",
             vec![
                 Token::Content("Hello ".into()),
                 Token::Variable("person_name".into()),
                 Token::Content("!".into()),
-            ]
+            ],
         );
+
+        assert_template_has_tokens(
+            "{{ a }} content {{ b }}",
+            vec![
+                Token::Variable("a".into()),
+                Token::Content(" content ".into()),
+                Token::Variable("b".into()),
+            ],
+        );
+
+        assert_template_has_tokens(
+            "-{{ a }} content {{ b }}-",
+            vec![
+                Token::Content("-".into()),
+                Token::Variable("a".into()),
+                Token::Content(" content ".into()),
+                Token::Variable("b".into()),
+                Token::Content("-".into()),
+            ],
+        );
+
+        assert_template_has_tokens(
+            "--{{ a }} content {{ b }}--",
+            vec![
+                Token::Content("--".into()),
+                Token::Variable("a".into()),
+                Token::Content(" content ".into()),
+                Token::Variable("b".into()),
+                Token::Content("--".into()),
+            ],
+        );
+
+        assert_template_has_tokens(
+            "---{{ a }} content {{ b }}---",
+            vec![
+                Token::Content("---".into()),
+                Token::Variable("a".into()),
+                Token::Content(" content ".into()),
+                Token::Variable("b".into()),
+                Token::Content("---".into()),
+            ],
+        );
+    }
+
+    fn assert_template_has_tokens(template: &'static str, expected_tokens: Vec<Token>) {
+        let mut tokenizer = Tokenizer::new(template.into());
+        tokenizer.tokenize();
+        let actual_tokens = tokenizer.get_tokens();
+        assert_eq!(*actual_tokens, expected_tokens);
     }
 }
