@@ -69,7 +69,9 @@ impl Tokenizer {
                 self.position - 2
             };
             let content = self.build_string_from_positions(start_position, end_position);
-            self.tokens.push(Token::Content(content));
+            if content.len() > 0 {
+                self.tokens.push(Token::Content(content));
+            }
         }
 
         self.context = TokenizerContext::PrintVariable;
@@ -126,7 +128,29 @@ mod tests {
     use super::*;
 
     #[test]
-    fn can_detect_tokens() {
+    fn single_variable() {
+        assert_template_has_tokens("{{ var }}", vec![Token::Variable("var".into())]);
+    }
+
+    #[test]
+    fn many_variables() {
+        assert_template_has_tokens(
+            "{{ var }}{{ var }}{{ var }}",
+            vec![
+                Token::Variable("var".into()),
+                Token::Variable("var".into()),
+                Token::Variable("var".into()),
+            ]
+        );
+    }
+
+    #[test]
+    fn content_only() {
+        assert_template_has_tokens("content 123 !@#", vec![Token::Content("content 123 !@#".into())]);
+    }
+
+    #[test]
+    fn simple_template() {
         assert_template_has_tokens(
             "Hello {{ person_name }}!",
             vec![
@@ -135,7 +159,10 @@ mod tests {
                 Token::Content("!".into()),
             ],
         );
+    }
 
+    #[test]
+    fn tokens_on_both_ends() {
         assert_template_has_tokens(
             "{{ a }} content {{ b }}",
             vec![
