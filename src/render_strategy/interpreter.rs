@@ -44,13 +44,13 @@ impl Tokenizer {
 
             self.position += 1;
             match self.context {
-                TokenizerContext::TemplateContent => self.template_content(),
-                TokenizerContext::PrintVariable => self.print_variable(),
+                TokenizerContext::TemplateContent => self.tokenize_content(),
+                TokenizerContext::PrintVariable => self.tokenize_variable(),
             };
         }
     }
 
-    fn template_content(&mut self) {
+    fn tokenize_content(&mut self) {
         let start_position = if self.position == 1 { 0 } else { self.position };
         let mut eof = false;
         while self.template[self.position - 1] != '{' || self.template[self.position] != '{' {
@@ -77,12 +77,21 @@ impl Tokenizer {
         self.context = TokenizerContext::PrintVariable;
     }
 
-    fn print_variable(&mut self) {
+    fn tokenize_variable(&mut self) {
         if self.template[self.position - 1] == '{' && self.template[self.position] == '{' {
             return;
         }
 
-        self.read_variable_name();
+        let start_position = self.position;
+
+        while self.template[self.position - 1] != '}' || self.template[self.position] != '}' {
+            self.position += 1;
+        }
+
+        let variable_name = self.build_string_from_positions(start_position, self.position - 2);
+        self.tokens
+            .push(Token::Variable(variable_name.trim().into()));
+        self.context = TokenizerContext::TemplateContent;
     }
 
     fn build_string_from_positions(&self, start: usize, end: usize) -> String {
@@ -95,19 +104,6 @@ impl Tokenizer {
         }
 
         content
-    }
-
-    fn read_variable_name(&mut self) {
-        let start_position = self.position;
-
-        while self.template[self.position - 1] != '}' || self.template[self.position] != '}' {
-            self.position += 1;
-        }
-
-        let variable_name = self.build_string_from_positions(start_position, self.position - 2);
-        self.tokens
-            .push(Token::Variable(variable_name.trim().into()));
-        self.context = TokenizerContext::TemplateContent;
     }
 }
 
