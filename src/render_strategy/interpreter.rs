@@ -1,121 +1,78 @@
 use crate::template::Context;
 
 pub fn interpreter(template: String, context: Context) -> String {
-    let mut tokenizer = Tokenizer::new("".into());
+    let mut tokenizer = Tokenizer::new("".chars());
     tokenizer.tokenize();
-    let _tokens = tokenizer.get_tokens();
     "".into()
 }
 
-struct Tokenizer {
-    template: Vec<char>,
-    position: usize,
+struct Tokenizer<T: Iterator<Item = char>> {
+    buffer: (Option<char>, Option<char>, Option<char>),
+    current_context: TokenizerContext,
+    template: T,
     tokens: Vec<Token>,
-    context: TokenizerContext,
 }
 
 #[derive(Debug, PartialEq)]
 enum Token {
-    Variable(String),
-    Content(String),
+    Expression(String),
+    Text(String),
 }
 
 #[derive(Debug, PartialEq)]
 enum TokenizerContext {
-    TemplateContent,
-    PrintVariable,
+    End,
+    Expression,
+    None,
+    Statement,
+    Text,
 }
 
-impl Tokenizer {
-    fn new(template: String) -> Self {
+impl<T: Iterator<Item = char>> Tokenizer<T> {
+    fn new(template: T) -> Self {
         Tokenizer {
-            template: template.chars().collect(),
-            position: 0,
+            buffer: (None, None, None),
+            current_context: TokenizerContext::None,
+            template,
             tokens: Vec::new(),
-            context: TokenizerContext::TemplateContent,
         }
-    }
-
-    fn get_tokens(&self) -> &Vec<Token> {
-        &self.tokens
-    }
-
-    fn reset_state(&mut self) {
-        self.context = TokenizerContext::TemplateContent;
-        self.position = 0;
-        self.tokens = Vec::new();
     }
 
     fn tokenize(&mut self) {
-        self.reset_state();
-
-        while self.position < self.template.len() {
-            if self.position == self.template.len() - 1 {
-                break;
+        self.buffer = (None, self.template.next(), self.template.next());
+        while self.current_context != TokenizerContext::End {
+            self.current_context = self.detect_context();
+            match self.current_context {
+                TokenizerContext::Expression => self.tokenize_expression(),
+                _ => self.tokenize_text(),
             }
-
-            self.position += 1;
-            match self.context {
-                TokenizerContext::TemplateContent => self.tokenize_content(),
-                TokenizerContext::PrintVariable => self.tokenize_variable(),
-            };
         }
     }
 
-    fn tokenize_content(&mut self) {
-        let start_position = if self.position == 1 { 0 } else { self.position };
-        let mut eof = false;
-        while self.template[self.position - 1] != '{' || self.template[self.position] != '{' {
-            if self.position == self.template.len() - 1 {
-                eof = true;
-                break;
-            }
-
-            self.position += 1;
+    fn detect_context(&mut self) -> TokenizerContext {
+        match (self.buffer.1, self.buffer.2) {
+            (_, None) => TokenizerContext::End,
+            (Some('{'), Some('{')) => TokenizerContext::Expression,
+            (Some('{'), Some('%')) => TokenizerContext::Statement,
+            _ => TokenizerContext::Text,
         }
-
-        if self.position > 1 {
-            let end_position = if eof {
-                self.position
-            } else {
-                self.position - 2
-            };
-            let content = self.build_string_from_positions(start_position, end_position);
-            if content.len() > 0 {
-                self.tokens.push(Token::Content(content));
-            }
-        }
-
-        self.context = TokenizerContext::PrintVariable;
     }
 
-    fn tokenize_variable(&mut self) {
-        if self.template[self.position - 1] == '{' && self.template[self.position] == '{' {
-            return;
-        }
-
-        let start_position = self.position;
-
-        while self.template[self.position - 1] != '}' || self.template[self.position] != '}' {
-            self.position += 1;
-        }
-
-        let variable_name = self.build_string_from_positions(start_position, self.position - 2);
-        self.tokens
-            .push(Token::Variable(variable_name.trim().into()));
-        self.context = TokenizerContext::TemplateContent;
+    fn tokenize_expression(&mut self) {
+        
     }
 
-    fn build_string_from_positions(&self, start: usize, end: usize) -> String {
-        let mut content = String::new();
-        let mut position = start;
+    fn advance(&mut self) {
+        self.buffer = (self.buffer.1, self.buffer.2, self.template.next());
+    }
 
-        while position <= end {
-            content.push(self.template[position]);
-            position += 1;
+    fn tokenize_text(&mut self) {
+        let mut text = String::new();
+        text.push(self.buffer.1.unwrap());
+        text.push(self.buffer.2.unwrap());
+        while self.detect_context() == TokenizerContext::Text {
+            self.advance();
         }
-
-        content
     }
 }
 
@@ -125,7 +82,7 @@ mod tests {
 
     #[test]
     fn single_variable() {
-        assert_template_has_tokens("{{ var }}", vec![Token::Variable("var".into())]);
+        assert_template_has_tokens("{{ var }}", vec![Token::Expression("var".into())]);
     }
 
     #[test]
@@ -133,16 +90,19 @@ mod tests {
         assert_template_has_tokens(
             "{{ var }}{{ var }}{{ var }}",
             vec![
-                Token::Variable("var".into()),
-                Token::Variable("var".into()),
-                Token::Variable("var".into()),
-            ]
+                Token::Expression("var".into()),
+                Token::Expression("var".into()),
+                Token::Expression("var".into()),
+            ],
         );
     }
 
     #[test]
     fn content_only() {
-        assert_template_has_tokens("content 123 !@#", vec![Token::Content("content 123 !@#".into())]);
+        assert_template_has_tokens(
+            "content 123 !@#",
+            vec![Token::Text("content 123 !@#".into())],
+        );
     }
 
     #[test]
@@ -150,9 +110,9 @@ mod tests {
         assert_template_has_tokens(
             "Hello {{ person_name }}!",
             vec![
-                Token::Content("Hello ".into()),
-                Token::Variable("person_name".into()),
-                Token::Content("!".into()),
+                Token::Text("Hello ".into()),
+                Token::Expression("person_name".into()),
+                Token::Text("!".into()),
             ],
         );
     }
@@ -162,50 +122,49 @@ mod tests {
         assert_template_has_tokens(
             "{{ a }} content {{ b }}",
             vec![
-                Token::Variable("a".into()),
-                Token::Content(" content ".into()),
-                Token::Variable("b".into()),
+                Token::Expression("a".into()),
+                Token::Text(" content ".into()),
+                Token::Expression("b".into()),
             ],
         );
 
         assert_template_has_tokens(
             "-{{ a }} content {{ b }}-",
             vec![
-                Token::Content("-".into()),
-                Token::Variable("a".into()),
-                Token::Content(" content ".into()),
-                Token::Variable("b".into()),
-                Token::Content("-".into()),
+                Token::Text("-".into()),
+                Token::Expression("a".into()),
+                Token::Text(" content ".into()),
+                Token::Expression("b".into()),
+                Token::Text("-".into()),
             ],
         );
 
         assert_template_has_tokens(
             "--{{ a }} content {{ b }}--",
             vec![
-                Token::Content("--".into()),
-                Token::Variable("a".into()),
-                Token::Content(" content ".into()),
-                Token::Variable("b".into()),
-                Token::Content("--".into()),
+                Token::Text("--".into()),
+                Token::Expression("a".into()),
+                Token::Text(" content ".into()),
+                Token::Expression("b".into()),
+                Token::Text("--".into()),
             ],
         );
 
         assert_template_has_tokens(
             "---{{ a }} content {{ b }}---",
             vec![
-                Token::Content("---".into()),
-                Token::Variable("a".into()),
-                Token::Content(" content ".into()),
-                Token::Variable("b".into()),
-                Token::Content("---".into()),
+                Token::Text("---".into()),
+                Token::Expression("a".into()),
+                Token::Text(" content ".into()),
+                Token::Expression("b".into()),
+                Token::Text("---".into()),
             ],
         );
     }
 
     fn assert_template_has_tokens(template: &'static str, expected_tokens: Vec<Token>) {
-        let mut tokenizer = Tokenizer::new(template.into());
+        let mut tokenizer = Tokenizer::new(template.chars());
         tokenizer.tokenize();
-        let actual_tokens = tokenizer.get_tokens();
-        assert_eq!(*actual_tokens, expected_tokens);
+        assert_eq!(*tokenizer.tokens, expected_tokens);
     }
 }
