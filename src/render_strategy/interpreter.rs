@@ -14,6 +14,18 @@ struct Tokenizer {
     context: TokenizerContext,
 }
 
+#[derive(Debug, PartialEq)]
+enum Token {
+    Variable(String),
+    Content(String),
+}
+
+#[derive(Debug, PartialEq)]
+enum TokenizerContext {
+    TemplateContent,
+    PrintVariable,
+}
+
 impl Tokenizer {
     fn new(template: String) -> Self {
         Tokenizer {
@@ -105,18 +117,6 @@ impl Tokenizer {
 
         content
     }
-}
-
-#[derive(Debug, PartialEq)]
-enum Token {
-    Variable(String),
-    Content(String),
-}
-
-#[derive(Debug, PartialEq)]
-enum TokenizerContext {
-    TemplateContent,
-    PrintVariable,
 }
 
 #[cfg(test)]
