@@ -23,16 +23,16 @@ enum Token {
 enum TokenizerContext {
     ExpressionEnd,
     ExpressionStart,
+    Start,
     StatementEnd,
     StatementStart,
-    Text,
 }
 
 impl<T: Iterator<Item = char>> Tokenizer<T> {
     fn new(template: T) -> Self {
         Tokenizer {
             buffer: Vec::new(),
-            current_context: TokenizerContext::Text,
+            current_context: TokenizerContext::Start,
             template,
             tokens: Vec::new(),
         }
@@ -41,21 +41,22 @@ impl<T: Iterator<Item = char>> Tokenizer<T> {
     fn tokenize(&mut self) {
         while let Some(char_value) = self.template.next() {
             self.buffer.push(char_value);
-            let context = self.detect_current_context();
+            let context = self.detect_context();
             if context != self.current_context {
-                self.make_token();
                 self.current_context = context;
+                self.make_token();
             }
         }
+        self.make_last_token();
     }
 
-    fn detect_current_context(&self) -> TokenizerContext {
+    fn detect_context(&self) -> TokenizerContext {
         match self.last_two_chars() {
             (Some('{'), Some('{')) => TokenizerContext::ExpressionStart,
             (Some('}'), Some('}')) => TokenizerContext::ExpressionEnd,
             (Some('{'), Some('%')) => TokenizerContext::StatementStart,
             (Some('%'), Some('}')) => TokenizerContext::StatementEnd,
-            _ => self.current_context.clone(),
+            _ => self.current_context,
         }
     }
 
@@ -76,25 +77,34 @@ impl<T: Iterator<Item = char>> Tokenizer<T> {
         self.buffer.pop();
         let token_value: String = self.buffer.iter().collect();
 
-        let token = match self.current_context {
-            TokenizerContext::Text => {
-                if token_value.len() > 0 {
-                    Some(Token::Text(token_value))
-                } else {
-                    None
+        if token_value.len() > 0 {
+            let token = match self.current_context {
+                TokenizerContext::ExpressionStart | TokenizerContext::StatementStart => {
+                    Token::Text(token_value)
                 }
-            }
-            TokenizerContext::ExpressionStart => {
-                let token_value = token_value.trim().into();
-                Some(Token::Expression(token_value))
-            }
-            _ => return,
-        };
+                TokenizerContext::ExpressionEnd => {
+                    let token_value = token_value.trim().into();
+                    Token::Expression(token_value)
+                }
+                TokenizerContext::StatementEnd => {
+                    let token_value = token_value.trim().into();
+                    Token::Expression(token_value)
+                }
+                _ => return,
+            };
 
-        if let Some(token) = token {
             self.tokens.push(token);
         }
+
         self.buffer = Vec::new();
+    }
+
+    fn make_last_token(&mut self) {
+        let buffer_rest: String = self.buffer.iter().collect();
+        if buffer_rest.len() > 0 {
+            let token = Token::Text(buffer_rest);
+            self.tokens.push(token);
+        }
     }
 }
 
