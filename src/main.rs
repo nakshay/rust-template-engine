@@ -1,16 +1,18 @@
 use std::collections::HashSet;
 
 fn main() {
-    let text = vec!["a", "aa", "aaa", "aaaa"];
-    let spaces = vec!["", " ", "  ", "   ", "    "];
+    let texts = vec![
+        String::from("a"),
+        String::from("aa"),
+        String::from("aaa"),
+    ];
+    let spaces = vec!["", " ", "  ", "   "];
     let mut expressions: HashSet<String> = HashSet::new();
-    let mut texts: HashSet<String> = HashSet::new();
+
     for s1 in &spaces {
-        texts.insert(format!("{}", s1));
         expressions.insert(format!("{{{{{}}}}}", s1));
-        for t in &text {
+        for t in &texts {
             for s2 in &spaces {
-                texts.insert(format!("{}{}{}", s1, t, s2));
                 expressions.insert(format!("{{{{{}{}{}}}}}", s1, t, s2));
             }
         }
@@ -31,6 +33,18 @@ fn main() {
         }
     }
 
+    let mut three_tokens_combinations: HashSet<String> = HashSet::new();
+    for c in &two_tokens_combinations {
+        for t in &texts {
+            three_tokens_combinations.insert(format!("{}{}", t, c));
+        }
+
+        for e in &expressions {
+            three_tokens_combinations.insert(format!("{}{}", e, c));
+        }
+    }
+
     println!("one token combinations: {}", one_token_combinations.len());
     println!("two token combinations: {}", two_tokens_combinations.len());
+    println!("three token combinations: {}", three_tokens_combinations.len());
 }
