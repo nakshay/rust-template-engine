@@ -113,85 +113,17 @@ mod tests {
     use super::*;
 
     #[test]
-    fn single_variable() {
-        assert_template_has_tokens("{{ var }}", vec![Token::Expression("var".into())]);
-    }
-
-    #[test]
-    fn many_variables() {
-        assert_template_has_tokens(
-            "{{ var }}{{ var }}{{ var }}",
-            vec![
-                Token::Expression("var".into()),
-                Token::Expression("var".into()),
-                Token::Expression("var".into()),
-            ],
-        );
-    }
-
-    #[test]
-    fn content_only() {
-        assert_template_has_tokens(
-            "content 123 !@#",
-            vec![Token::Text("content 123 !@#".into())],
-        );
-    }
-
-    #[test]
-    fn simple_template() {
-        assert_template_has_tokens(
-            "Hello {{ person_name }}!",
-            vec![
-                Token::Text("Hello ".into()),
-                Token::Expression("person_name".into()),
-                Token::Text("!".into()),
-            ],
-        );
-    }
-
-    #[test]
-    fn tokens_on_both_ends() {
-        assert_template_has_tokens(
-            "{{ a }} content {{ b }}",
-            vec![
-                Token::Expression("a".into()),
-                Token::Text(" content ".into()),
-                Token::Expression("b".into()),
-            ],
-        );
-
-        assert_template_has_tokens(
-            "-{{ a }} content {{ b }}-",
-            vec![
-                Token::Text("-".into()),
-                Token::Expression("a".into()),
-                Token::Text(" content ".into()),
-                Token::Expression("b".into()),
-                Token::Text("-".into()),
-            ],
-        );
-
-        assert_template_has_tokens(
-            "--{{ a }} content {{ b }}--",
-            vec![
-                Token::Text("--".into()),
-                Token::Expression("a".into()),
-                Token::Text(" content ".into()),
-                Token::Expression("b".into()),
-                Token::Text("--".into()),
-            ],
-        );
-
-        assert_template_has_tokens(
-            "---{{ a }} content {{ b }}---",
-            vec![
-                Token::Text("---".into()),
-                Token::Expression("a".into()),
-                Token::Text(" content ".into()),
-                Token::Expression("b".into()),
-                Token::Text("---".into()),
-            ],
-        );
+    fn test_a_lot_of_combinations() {
+        let text = vec!["", "a", "aa", "aaa"];
+        let spaces = vec!["", " ", "  ", "   "];
+        let mut one_token_combinations: Vec<String> = Vec::new();
+        for t in &text {
+            for s in &spaces {
+                let template = format!("{{{}{}{}}}", s, t, s);
+                println!("{}", template);
+                one_token_combinations.push(template);
+            }
+        }
     }
 
     fn assert_template_has_tokens(template: &'static str, expected_tokens: Vec<Token>) {
