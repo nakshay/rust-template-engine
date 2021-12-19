@@ -9,6 +9,7 @@ pub fn interpreter(template: String, context: Context) -> String {
 struct Tokenizer<T: Iterator<Item = char>> {
     buffer: Vec<char>,
     current_context: TokenizerContext,
+    previous_markers: (Option<char>, Option<char>),
     template: T,
     tokens: Vec<Token>,
 }
@@ -16,6 +17,7 @@ struct Tokenizer<T: Iterator<Item = char>> {
 #[derive(Debug, PartialEq, Clone)]
 enum Token {
     Expression(String),
+    Statement(String),
     Text(String),
 }
 
@@ -33,6 +35,7 @@ impl<T: Iterator<Item = char>> Tokenizer<T> {
         Tokenizer {
             buffer: Vec::new(),
             current_context: TokenizerContext::Start,
+            previous_markers: (None, None),
             template,
             tokens: Vec::new(),
         }
@@ -73,30 +76,40 @@ impl<T: Iterator<Item = char>> Tokenizer<T> {
     }
 
     fn make_token(&mut self) {
-        self.buffer.pop();
-        self.buffer.pop();
+        let second_marker_char = self.buffer.pop();
+        let first_marker_char = self.buffer.pop();
+        let current_markers = (first_marker_char, second_marker_char);
         let token_value: String = self.buffer.iter().collect();
 
-        if token_value.len() > 0 {
+        if token_value.trim().len() > 0 {
             let token = match self.current_context {
                 TokenizerContext::ExpressionStart | TokenizerContext::StatementStart => {
                     Token::Text(token_value)
                 }
-                TokenizerContext::ExpressionEnd => {
-                    let token_value = token_value.trim().into();
-                    Token::Expression(token_value)
-                }
-                TokenizerContext::StatementEnd => {
-                    let token_value = token_value.trim().into();
-                    Token::Expression(token_value)
-                }
+                TokenizerContext::ExpressionEnd => Token::Expression(token_value.trim().into()),
+                TokenizerContext::StatementEnd => Token::Statement(token_value.trim().into()),
                 _ => return,
             };
 
             self.tokens.push(token);
+        } else if let (
+            (Some(previous_marker_first_char), Some(previous_marker_second_char)),
+            (Some(current_marker_first_char), Some(current_marker_second_char)),
+        ) = (self.previous_markers, current_markers)
+        {
+            let token = Token::Text(format!(
+                "{}{}{}{}{}",
+                previous_marker_first_char,
+                previous_marker_second_char,
+                token_value,
+                current_marker_first_char,
+                current_marker_second_char
+            ));
+            self.tokens.push(token);
         }
 
         self.buffer = Vec::new();
+        self.previous_markers = (current_markers.0, current_markers.1);
     }
 
     fn make_last_token(&mut self) {
@@ -217,12 +230,15 @@ mod tests {
                 FormsOf::Expressions(&expressions),
             ],
         ];
-    
         for combination in combinations_to_test {
-            make_combinations(&combination, 2, [ShouldBe::None, ShouldBe::None, ShouldBe::None]);
+            make_combinations(
+                &combination,
+                2,
+                [ShouldBe::None, ShouldBe::None, ShouldBe::None],
+            );
         }
     }
-    
+
     fn make_combinations(forms: &[FormsOf; 3], position: usize, template: [ShouldBe; 3]) {
         match forms[position] {
             FormsOf::Texts(texts) => {
@@ -258,23 +274,23 @@ mod tests {
             FormsOf::None => {
                 let template = template.clone();
                 assert_template_has_tokens(template);
-            }
+            },
         }
     }
-    
+
     #[derive(Debug, PartialEq, Clone)]
     enum ShouldBe {
         None,
         Expression(&'static str),
         Text(&'static str),
     }
-    
+
     #[derive(Debug, PartialEq)]
     enum FormsOf<'a> {
         None,
         Expressions(&'a [(&'static str, ShouldBe); 52]),
         Texts(&'a [&'static str; 3]),
-    }    
+    }
 
     fn assert_template_has_tokens(template: [ShouldBe; 3]) {
         let mut template_string = String::new();
@@ -287,25 +303,28 @@ mod tests {
                     let last = expected_tokens.last();
 
                     match last {
-                        Some(last) => {
-                            match (*last).clone() {
-                                Token::Text(mut previous_text) => previous_text.push_str(text),
-                                _ => expected_tokens.push(Token::Text(String::from(text))),
-                            }
+                        Some(last) => match (*last).clone() {
+                            Token::Text(mut previous_text) => previous_text.push_str(text),
+                            _ => expected_tokens.push(Token::Text(String::from(text))),
                         },
                         None => expected_tokens.push(Token::Text(String::from(text))),
                     }
-                },
+                }
                 ShouldBe::Expression(expression) => {
                     template_string.push_str(expression);
                     expected_tokens.push(Token::Expression(String::from(expression)));
-                },
-                ShouldBe::None => {},
+                }
+                ShouldBe::None => {}
             }
         }
 
         let mut tokenizer = Tokenizer::new(template_string.chars());
         tokenizer.tokenize();
-        assert_eq!(*tokenizer.tokens, expected_tokens);
+        let tokens = tokenizer.tokens;
+        let message = format!(
+            "expected template \"{}\" to have tokens {:?}, but received {:?}",
+            template_string, expected_tokens, tokens
+        );
+        assert_eq!(tokens, expected_tokens, "{}", message);
     }
 }
