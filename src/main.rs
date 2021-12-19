@@ -1,50 +1,152 @@
-use std::collections::HashSet;
-
 fn main() {
-    let texts = vec![
-        String::from("a"),
-        String::from("aa"),
-        String::from("aaa"),
+    let texts = ["a", "aa", "aaa"];
+    let expressions = [
+        ("{{}}", ShouldBe::Text("{{}}")),
+        ("{{ }}", ShouldBe::Text("{{ }}")),
+        ("{{  }}", ShouldBe::Text("{{  }}")),
+        ("{{   }}", ShouldBe::Text("{{   }}")),
+        ("{{a}}", ShouldBe::Expression("a")),
+        ("{{a }}", ShouldBe::Expression("a")),
+        ("{{a  }}", ShouldBe::Expression("a")),
+        ("{{a   }}", ShouldBe::Expression("a")),
+        ("{{ a}}", ShouldBe::Expression("a")),
+        ("{{ a }}", ShouldBe::Expression("a")),
+        ("{{ a  }}", ShouldBe::Expression("a")),
+        ("{{ a   }}", ShouldBe::Expression("a")),
+        ("{{  a}}", ShouldBe::Expression("a")),
+        ("{{  a }}", ShouldBe::Expression("a")),
+        ("{{  a  }}", ShouldBe::Expression("a")),
+        ("{{  a   }}", ShouldBe::Expression("a")),
+        ("{{   a}}", ShouldBe::Expression("a")),
+        ("{{   a }}", ShouldBe::Expression("a")),
+        ("{{   a  }}", ShouldBe::Expression("a")),
+        ("{{   a   }}", ShouldBe::Expression("a")),
+        ("{{aa}}", ShouldBe::Expression("aa")),
+        ("{{aa }}", ShouldBe::Expression("aa")),
+        ("{{aa  }}", ShouldBe::Expression("aa")),
+        ("{{aa   }}", ShouldBe::Expression("aa")),
+        ("{{ aa}}", ShouldBe::Expression("aa")),
+        ("{{ aa }}", ShouldBe::Expression("aa")),
+        ("{{ aa  }}", ShouldBe::Expression("aa")),
+        ("{{ aa   }}", ShouldBe::Expression("aa")),
+        ("{{  aa}}", ShouldBe::Expression("aa")),
+        ("{{  aa }}", ShouldBe::Expression("aa")),
+        ("{{  aa  }}", ShouldBe::Expression("aa")),
+        ("{{  aa   }}", ShouldBe::Expression("aa")),
+        ("{{   aa}}", ShouldBe::Expression("aa")),
+        ("{{   aa }}", ShouldBe::Expression("aa")),
+        ("{{   aa  }}", ShouldBe::Expression("aa")),
+        ("{{   aa   }}", ShouldBe::Expression("aa")),
+        ("{{aaa}}", ShouldBe::Expression("aaa")),
+        ("{{aaa }}", ShouldBe::Expression("aaa")),
+        ("{{aaa  }}", ShouldBe::Expression("aaa")),
+        ("{{aaa   }}", ShouldBe::Expression("aaa")),
+        ("{{ aaa}}", ShouldBe::Expression("aaa")),
+        ("{{ aaa }}", ShouldBe::Expression("aaa")),
+        ("{{ aaa  }}", ShouldBe::Expression("aaa")),
+        ("{{ aaa   }}", ShouldBe::Expression("aaa")),
+        ("{{  aaa}}", ShouldBe::Expression("aaa")),
+        ("{{  aaa }}", ShouldBe::Expression("aaa")),
+        ("{{  aaa  }}", ShouldBe::Expression("aaa")),
+        ("{{  aaa   }}", ShouldBe::Expression("aaa")),
+        ("{{   aaa}}", ShouldBe::Expression("aaa")),
+        ("{{   aaa }}", ShouldBe::Expression("aaa")),
+        ("{{   aaa  }}", ShouldBe::Expression("aaa")),
+        ("{{   aaa   }}", ShouldBe::Expression("aaa")),
     ];
-    let spaces = vec!["", " ", "  ", "   "];
-    let mut expressions: HashSet<String> = HashSet::new();
+    let combinations_to_test = [
+        [FormsOf::None, FormsOf::None, FormsOf::Texts(&texts)],
+        [
+            FormsOf::None,
+            FormsOf::None,
+            FormsOf::Expressions(&expressions),
+        ],
+        [
+            FormsOf::None,
+            FormsOf::Texts(&texts),
+            FormsOf::Expressions(&expressions),
+        ],
+        [
+            FormsOf::None,
+            FormsOf::Expressions(&expressions),
+            FormsOf::Texts(&texts),
+        ],
+        [
+            FormsOf::None,
+            FormsOf::Expressions(&expressions),
+            FormsOf::Expressions(&expressions),
+        ],
+        [
+            FormsOf::Texts(&texts),
+            FormsOf::Expressions(&expressions),
+            FormsOf::Texts(&texts),
+        ],
+        [
+            FormsOf::Texts(&texts),
+            FormsOf::Expressions(&expressions),
+            FormsOf::Expressions(&expressions),
+        ],
+        [
+            FormsOf::Expressions(&expressions),
+            FormsOf::Texts(&texts),
+            FormsOf::Expressions(&expressions),
+        ],
+        [
+            FormsOf::Expressions(&expressions),
+            FormsOf::Expressions(&expressions),
+            FormsOf::Texts(&texts),
+        ],
+        [
+            FormsOf::Expressions(&expressions),
+            FormsOf::Expressions(&expressions),
+            FormsOf::Expressions(&expressions),
+        ],
+    ];
 
-    for s1 in &spaces {
-        expressions.insert(format!("{{{{{}}}}}", s1));
-        for t in &texts {
-            for s2 in &spaces {
-                expressions.insert(format!("{{{{{}{}{}}}}}", s1, t, s2));
+    for combination in combinations_to_test {
+        make_combinations(&combination, 2, "".into());
+    }
+}
+
+fn make_combinations(forms: &[FormsOf; 3], position: usize, template: String) {
+    match forms[position] {
+        FormsOf::Texts(texts) => {
+            if position == 0 {
+                for text in texts {
+                    println!("{}{}", text, template);
+                }
+            } else {
+                for text in texts {
+                    make_combinations(forms, position - 1, format!("{}{}", text, template));
+                }
             }
+        },
+        FormsOf::Expressions(expressions) => {
+            if position == 0 {
+                for expression in expressions {
+                    println!("{}{}", expression.0, template);
+                }
+            } else {
+                for expression in expressions {
+                    make_combinations(forms, position - 1, format!("{}{}", expression.0, template));
+                }
+            }
+        },
+        FormsOf::None => {
+            println!("{}", template);
         }
     }
+}
 
-    let mut one_token_combinations = texts.clone();
-    one_token_combinations.extend(expressions.clone());
-    
-    let mut two_tokens_combinations: HashSet<String> = HashSet::new();
-    for e1 in &expressions {
-        for t in &texts {
-            two_tokens_combinations.insert(format!("{}{}", t, e1));
-            two_tokens_combinations.insert(format!("{}{}", e1, t));
-        }
+#[derive(Debug, PartialEq)]
+enum ShouldBe {
+    Expression(&'static str),
+    Text(&'static str),
+}
 
-        for e2 in &expressions {
-            two_tokens_combinations.insert(format!("{}{}", e1, e2));
-        }
-    }
-
-    let mut three_tokens_combinations: HashSet<String> = HashSet::new();
-    for c in &two_tokens_combinations {
-        for t in &texts {
-            three_tokens_combinations.insert(format!("{}{}", t, c));
-        }
-
-        for e in &expressions {
-            three_tokens_combinations.insert(format!("{}{}", e, c));
-        }
-    }
-
-    println!("one token combinations: {}", one_token_combinations.len());
-    println!("two token combinations: {}", two_tokens_combinations.len());
-    println!("three token combinations: {}", three_tokens_combinations.len());
+#[derive(Debug, PartialEq)]
+enum FormsOf<'a> {
+    None,
+    Expressions(&'a [(&'static str, ShouldBe); 52]),
+    Texts(&'a [&'static str; 3]),
 }
