@@ -125,205 +125,205 @@ impl<T: Iterator<Item = char>> Tokenizer<T> {
 mod tests {
     use super::*;
 
+    #[derive(Debug, PartialEq)]
+    enum FormsOf<'a> {
+        Expressions(&'a [(&'static str, Token); 52]),
+        Texts(&'a [&'static str; 3]),
+    }
+
     #[test]
     fn test_many_combinations() {
         let texts = ["a", "aa", "aaa"];
         let expressions = [
-            ("{{}}", ShouldBe::Text("{{}}")),
-            ("{{ }}", ShouldBe::Text("{{ }}")),
-            ("{{  }}", ShouldBe::Text("{{  }}")),
-            ("{{   }}", ShouldBe::Text("{{   }}")),
-            ("{{a}}", ShouldBe::Expression("a")),
-            ("{{a }}", ShouldBe::Expression("a")),
-            ("{{a  }}", ShouldBe::Expression("a")),
-            ("{{a   }}", ShouldBe::Expression("a")),
-            ("{{ a}}", ShouldBe::Expression("a")),
-            ("{{ a }}", ShouldBe::Expression("a")),
-            ("{{ a  }}", ShouldBe::Expression("a")),
-            ("{{ a   }}", ShouldBe::Expression("a")),
-            ("{{  a}}", ShouldBe::Expression("a")),
-            ("{{  a }}", ShouldBe::Expression("a")),
-            ("{{  a  }}", ShouldBe::Expression("a")),
-            ("{{  a   }}", ShouldBe::Expression("a")),
-            ("{{   a}}", ShouldBe::Expression("a")),
-            ("{{   a }}", ShouldBe::Expression("a")),
-            ("{{   a  }}", ShouldBe::Expression("a")),
-            ("{{   a   }}", ShouldBe::Expression("a")),
-            ("{{aa}}", ShouldBe::Expression("aa")),
-            ("{{aa }}", ShouldBe::Expression("aa")),
-            ("{{aa  }}", ShouldBe::Expression("aa")),
-            ("{{aa   }}", ShouldBe::Expression("aa")),
-            ("{{ aa}}", ShouldBe::Expression("aa")),
-            ("{{ aa }}", ShouldBe::Expression("aa")),
-            ("{{ aa  }}", ShouldBe::Expression("aa")),
-            ("{{ aa   }}", ShouldBe::Expression("aa")),
-            ("{{  aa}}", ShouldBe::Expression("aa")),
-            ("{{  aa }}", ShouldBe::Expression("aa")),
-            ("{{  aa  }}", ShouldBe::Expression("aa")),
-            ("{{  aa   }}", ShouldBe::Expression("aa")),
-            ("{{   aa}}", ShouldBe::Expression("aa")),
-            ("{{   aa }}", ShouldBe::Expression("aa")),
-            ("{{   aa  }}", ShouldBe::Expression("aa")),
-            ("{{   aa   }}", ShouldBe::Expression("aa")),
-            ("{{aaa}}", ShouldBe::Expression("aaa")),
-            ("{{aaa }}", ShouldBe::Expression("aaa")),
-            ("{{aaa  }}", ShouldBe::Expression("aaa")),
-            ("{{aaa   }}", ShouldBe::Expression("aaa")),
-            ("{{ aaa}}", ShouldBe::Expression("aaa")),
-            ("{{ aaa }}", ShouldBe::Expression("aaa")),
-            ("{{ aaa  }}", ShouldBe::Expression("aaa")),
-            ("{{ aaa   }}", ShouldBe::Expression("aaa")),
-            ("{{  aaa}}", ShouldBe::Expression("aaa")),
-            ("{{  aaa }}", ShouldBe::Expression("aaa")),
-            ("{{  aaa  }}", ShouldBe::Expression("aaa")),
-            ("{{  aaa   }}", ShouldBe::Expression("aaa")),
-            ("{{   aaa}}", ShouldBe::Expression("aaa")),
-            ("{{   aaa }}", ShouldBe::Expression("aaa")),
-            ("{{   aaa  }}", ShouldBe::Expression("aaa")),
-            ("{{   aaa   }}", ShouldBe::Expression("aaa")),
+            ("{{}}", Token::Text("{{}}".into())),
+            ("{{ }}", Token::Text("{{ }}".into())),
+            ("{{  }}", Token::Text("{{  }}".into())),
+            ("{{   }}", Token::Text("{{   }}".into())),
+            ("{{a}}", Token::Expression("a".into())),
+            ("{{a }}", Token::Expression("a".into())),
+            ("{{a  }}", Token::Expression("a".into())),
+            ("{{a   }}", Token::Expression("a".into())),
+            ("{{ a}}", Token::Expression("a".into())),
+            ("{{ a }}", Token::Expression("a".into())),
+            ("{{ a  }}", Token::Expression("a".into())),
+            ("{{ a   }}", Token::Expression("a".into())),
+            ("{{  a}}", Token::Expression("a".into())),
+            ("{{  a }}", Token::Expression("a".into())),
+            ("{{  a  }}", Token::Expression("a".into())),
+            ("{{  a   }}", Token::Expression("a".into())),
+            ("{{   a}}", Token::Expression("a".into())),
+            ("{{   a }}", Token::Expression("a".into())),
+            ("{{   a  }}", Token::Expression("a".into())),
+            ("{{   a   }}", Token::Expression("a".into())),
+            ("{{aa}}", Token::Expression("aa".into())),
+            ("{{aa }}", Token::Expression("aa".into())),
+            ("{{aa  }}", Token::Expression("aa".into())),
+            ("{{aa   }}", Token::Expression("aa".into())),
+            ("{{ aa}}", Token::Expression("aa".into())),
+            ("{{ aa }}", Token::Expression("aa".into())),
+            ("{{ aa  }}", Token::Expression("aa".into())),
+            ("{{ aa   }}", Token::Expression("aa".into())),
+            ("{{  aa}}", Token::Expression("aa".into())),
+            ("{{  aa }}", Token::Expression("aa".into())),
+            ("{{  aa  }}", Token::Expression("aa".into())),
+            ("{{  aa   }}", Token::Expression("aa".into())),
+            ("{{   aa}}", Token::Expression("aa".into())),
+            ("{{   aa }}", Token::Expression("aa".into())),
+            ("{{   aa  }}", Token::Expression("aa".into())),
+            ("{{   aa   }}", Token::Expression("aa".into())),
+            ("{{aaa}}", Token::Expression("aaa".into())),
+            ("{{aaa }}", Token::Expression("aaa".into())),
+            ("{{aaa  }}", Token::Expression("aaa".into())),
+            ("{{aaa   }}", Token::Expression("aaa".into())),
+            ("{{ aaa}}", Token::Expression("aaa".into())),
+            ("{{ aaa }}", Token::Expression("aaa".into())),
+            ("{{ aaa  }}", Token::Expression("aaa".into())),
+            ("{{ aaa   }}", Token::Expression("aaa".into())),
+            ("{{  aaa}}", Token::Expression("aaa".into())),
+            ("{{  aaa }}", Token::Expression("aaa".into())),
+            ("{{  aaa  }}", Token::Expression("aaa".into())),
+            ("{{  aaa   }}", Token::Expression("aaa".into())),
+            ("{{   aaa}}", Token::Expression("aaa".into())),
+            ("{{   aaa }}", Token::Expression("aaa".into())),
+            ("{{   aaa  }}", Token::Expression("aaa".into())),
+            ("{{   aaa   }}", Token::Expression("aaa".into())),
         ];
+
         let combinations_to_test = [
-            [FormsOf::None, FormsOf::None, FormsOf::Texts(&texts)],
+            [None, None, Some(FormsOf::Texts(&texts))],
             [
-                FormsOf::None,
-                FormsOf::None,
-                FormsOf::Expressions(&expressions),
+                None,
+                None,
+                Some(FormsOf::Expressions(&expressions)),
             ],
             [
-                FormsOf::None,
-                FormsOf::Texts(&texts),
-                FormsOf::Expressions(&expressions),
+                None,
+                Some(FormsOf::Texts(&texts)),
+                Some(FormsOf::Expressions(&expressions)),
             ],
             [
-                FormsOf::None,
-                FormsOf::Expressions(&expressions),
-                FormsOf::Texts(&texts),
+                None,
+                Some(FormsOf::Expressions(&expressions)),
+                Some(FormsOf::Texts(&texts)),
             ],
             [
-                FormsOf::None,
-                FormsOf::Expressions(&expressions),
-                FormsOf::Expressions(&expressions),
+                None,
+                Some(FormsOf::Expressions(&expressions)),
+                Some(FormsOf::Expressions(&expressions)),
             ],
             [
-                FormsOf::Texts(&texts),
-                FormsOf::Expressions(&expressions),
-                FormsOf::Texts(&texts),
+                Some(FormsOf::Texts(&texts)),
+                Some(FormsOf::Expressions(&expressions)),
+                Some(FormsOf::Texts(&texts)),
             ],
             [
-                FormsOf::Texts(&texts),
-                FormsOf::Expressions(&expressions),
-                FormsOf::Expressions(&expressions),
+                Some(FormsOf::Texts(&texts)),
+                Some(FormsOf::Expressions(&expressions)),
+                Some(FormsOf::Expressions(&expressions)),
             ],
             [
-                FormsOf::Expressions(&expressions),
-                FormsOf::Texts(&texts),
-                FormsOf::Expressions(&expressions),
+                Some(FormsOf::Expressions(&expressions)),
+                Some(FormsOf::Texts(&texts)),
+                Some(FormsOf::Expressions(&expressions)),
             ],
             [
-                FormsOf::Expressions(&expressions),
-                FormsOf::Expressions(&expressions),
-                FormsOf::Texts(&texts),
+                Some(FormsOf::Expressions(&expressions)),
+                Some(FormsOf::Expressions(&expressions)),
+                Some(FormsOf::Texts(&texts)),
             ],
             [
-                FormsOf::Expressions(&expressions),
-                FormsOf::Expressions(&expressions),
-                FormsOf::Expressions(&expressions),
+                Some(FormsOf::Expressions(&expressions)),
+                Some(FormsOf::Expressions(&expressions)),
+                Some(FormsOf::Expressions(&expressions)),
             ],
         ];
         for combination in combinations_to_test {
-            make_combinations(
-                &combination,
-                2,
-                [ShouldBe::None, ShouldBe::None, ShouldBe::None],
-            );
+            make_combinations(&combination, 2, "".into(), [None, None, None]);
         }
     }
 
-    fn make_combinations(forms: &[FormsOf; 3], position: usize, template: [ShouldBe; 3]) {
-        match forms[position] {
-            FormsOf::Texts(texts) => {
-                if position == 0 {
-                    for text in texts {
-                        let mut template = template.clone();
-                        template[position] = ShouldBe::Text(text);
-                        assert_template_has_tokens(template);
-                    }
-                } else {
-                    for text in texts {
-                        let mut template = template.clone();
-                        template[position] = ShouldBe::Text(text);
-                        make_combinations(forms, position - 1, template);
-                    }
+    fn make_combinations(scenario: &[Option<FormsOf>; 3], position: usize, template: String, tokens: [Option<Token>; 3]) {
+        match &scenario[position] {
+            Some(forms) => {
+                match forms { 
+                    FormsOf::Texts(texts) => {
+                        if position == 0 {
+                            for text in *texts {
+                                let mut tokens = tokens.clone();
+                                tokens[position] = Some(Token::Text(String::from(*text)));
+                                let mut template = template.clone();
+                                template.push_str(*text);
+                                assert_template_has_tokens(template, tokens);
+                            }
+                        } else {
+                            for text in *texts {
+                                let mut tokens = tokens.clone();
+                                tokens[position] = Some(Token::Text(String::from(*text)));
+                                let mut template = template.clone();
+                                template.push_str(*text);
+                                make_combinations(scenario, position - 1, template, tokens);
+                            }
+                        }
+                    },
+                    FormsOf::Expressions(expressions) => {
+                        if position == 0 {
+                            for expression in (*expressions).clone() {
+                                let mut template = template.clone();
+                                template.push_str(expression.0);
+                                let mut tokens = tokens.clone();
+                                tokens[position] = Some(expression.1);
+                                assert_template_has_tokens(template, tokens);
+                            }
+                        } else {
+                            for expression in (*expressions).clone() {
+                                let mut template = template.clone();
+                                template.push_str(expression.0);
+                                let mut tokens = tokens.clone();
+                                tokens[position] = Some(expression.1);
+                                make_combinations(scenario, position - 1, template, tokens);
+                            }
+                        }
+                    },
                 }
             },
-            FormsOf::Expressions(expressions) => {
-                if position == 0 {
-                    for expression in expressions {
-                        let mut template = template.clone();
-                        template[position] = expression.1.clone();
-                        assert_template_has_tokens(template);
-                    }
-                } else {
-                    for expression in expressions {
-                        let mut template = template.clone();
-                        template[position] = expression.1.clone();
-                        make_combinations(forms, position - 1, template.clone());
-                    }
-                }
-            },
-            FormsOf::None => {
-                let template = template.clone();
-                assert_template_has_tokens(template);
+            None => {
+                let tokens = tokens.clone();
+                assert_template_has_tokens(template, tokens);
             },
         }
     }
 
-    #[derive(Debug, PartialEq, Clone)]
-    enum ShouldBe {
-        None,
-        Expression(&'static str),
-        Text(&'static str),
-    }
-
-    #[derive(Debug, PartialEq)]
-    enum FormsOf<'a> {
-        None,
-        Expressions(&'a [(&'static str, ShouldBe); 52]),
-        Texts(&'a [&'static str; 3]),
-    }
-
-    fn assert_template_has_tokens(template: [ShouldBe; 3]) {
-        let mut template_string = String::new();
+    fn assert_template_has_tokens(template: String, received_tokens: [Option<Token>; 3]) {
         let mut expected_tokens: Vec<Token> = Vec::new();
 
-        for expectation in template {
-            match expectation {
-                ShouldBe::Text(text) => {
-                    template_string.push_str(text);
-                    let last = expected_tokens.last();
+        for expectation in received_tokens.clone() {
+            if let Some(token) = expectation {
+                match token.clone() {
+                    Token::Text(text) => {
+                        let last = expected_tokens.last();
 
-                    match last {
-                        Some(last) => match (*last).clone() {
-                            Token::Text(mut previous_text) => previous_text.push_str(text),
-                            _ => expected_tokens.push(Token::Text(String::from(text))),
-                        },
-                        None => expected_tokens.push(Token::Text(String::from(text))),
-                    }
+                        match last {
+                            Some(last) => match (*last).clone() {
+                                Token::Text(mut previous_text) => previous_text.push_str(text.as_str()),
+                                _ => expected_tokens.push(token),
+                            },
+                            None => expected_tokens.push(token),
+                        }
+                    },
+                    Token::Expression(_) => expected_tokens.push(token),
+                    Token::Statement(_) => expected_tokens.push(token),
                 }
-                ShouldBe::Expression(expression) => {
-                    template_string.push_str(expression);
-                    expected_tokens.push(Token::Expression(String::from(expression)));
-                }
-                ShouldBe::None => {}
             }
         }
 
-        let mut tokenizer = Tokenizer::new(template_string.chars());
+        println!("{:?} -> \"{}\"", received_tokens, template);
+
+        let mut tokenizer = Tokenizer::new(template.chars());
         tokenizer.tokenize();
         let tokens = tokenizer.tokens;
         let message = format!(
             "expected template \"{}\" to have tokens {:?}, but received {:?}",
-            template_string, expected_tokens, tokens
+            template, expected_tokens, tokens
         );
         assert_eq!(tokens, expected_tokens, "{}", message);
     }
