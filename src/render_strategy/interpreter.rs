@@ -8,8 +8,8 @@ pub fn interpreter(template: String, context: Context) -> String {
 
 struct Tokenizer<T: Iterator<Item = char>> {
     buffer: Vec<char>,
-    current_context: TokenizerContext,
-    previous_markers: (Option<char>, Option<char>),
+    curr_context: TokenizerContext,
+    prev_markers: (Option<char>, Option<char>),
     template: T,
     tokens: Vec<Token>,
 }
@@ -34,8 +34,8 @@ impl<T: Iterator<Item = char>> Tokenizer<T> {
     fn new(template: T) -> Self {
         Tokenizer {
             buffer: Vec::new(),
-            current_context: TokenizerContext::Start,
-            previous_markers: (None, None),
+            curr_context: TokenizerContext::Start,
+            prev_markers: (None, None),
             template,
             tokens: Vec::new(),
         }
@@ -45,12 +45,16 @@ impl<T: Iterator<Item = char>> Tokenizer<T> {
         while let Some(char_value) = self.template.next() {
             self.buffer.push(char_value);
             let context = self.detect_context();
-            if context != self.current_context {
-                self.current_context = context;
+            if context != self.curr_context {
+                self.curr_context = context;
                 self.make_token();
             }
         }
-        self.make_last_token();
+        let buffer_rest: String = self.buffer.iter().collect();
+        if buffer_rest.len() > 0 {
+            let token = Token::Text(buffer_rest);
+            self.tokens.push(token);
+        }
     }
 
     fn detect_context(&self) -> TokenizerContext {
@@ -71,17 +75,17 @@ impl<T: Iterator<Item = char>> Tokenizer<T> {
             (Some('}'), Some('}')) => TokenizerContext::ExpressionEnd,
             (Some('{'), Some('%')) => TokenizerContext::StatementStart,
             (Some('%'), Some('}')) => TokenizerContext::StatementEnd,
-            _ => self.current_context,
+            _ => self.curr_context,
         }
     }
 
     fn make_token(&mut self) {
-        let current_marker_second_char = self.buffer.pop().unwrap();
-        let current_marker_first_char = self.buffer.pop().unwrap();
+        let curr_2nd_marker = self.buffer.pop().unwrap();
+        let curr_1st_marker = self.buffer.pop().unwrap();
         let token_value: String = self.buffer.iter().collect();
 
         if token_value.trim().len() > 0 {
-            let token = match self.current_context {
+            let token = match self.curr_context {
                 TokenizerContext::ExpressionStart | TokenizerContext::StatementStart => {
                     Token::Text(token_value)
                 }
@@ -91,33 +95,16 @@ impl<T: Iterator<Item = char>> Tokenizer<T> {
             };
 
             self.tokens.push(token);
-        } else if let (Some(previous_marker_first_char), Some(previous_marker_second_char)) =
-            self.previous_markers
-        {
+        } else if let (Some(prev_1st_marker), Some(prev_2nd_marker)) = self.prev_markers {
             let token = Token::Text(format!(
                 "{}{}{}{}{}",
-                previous_marker_first_char,
-                previous_marker_second_char,
-                token_value,
-                current_marker_first_char,
-                current_marker_second_char
+                prev_1st_marker, prev_2nd_marker, token_value, curr_1st_marker, curr_2nd_marker
             ));
             self.tokens.push(token);
         }
 
         self.buffer = Vec::new();
-        self.previous_markers = (
-            Some(current_marker_first_char),
-            Some(current_marker_second_char),
-        );
-    }
-
-    fn make_last_token(&mut self) {
-        let buffer_rest: String = self.buffer.iter().collect();
-        if buffer_rest.len() > 0 {
-            let token = Token::Text(buffer_rest);
-            self.tokens.push(token);
-        }
+        self.prev_markers = (Some(curr_1st_marker), Some(curr_2nd_marker));
     }
 }
 
