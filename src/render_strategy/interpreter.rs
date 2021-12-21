@@ -50,10 +50,9 @@ impl<T: Iterator<Item = char>> Tokenizer<T> {
                 self.make_token();
             }
         }
-        let buffer_rest: String = self.buffer.iter().collect();
-        if buffer_rest.len() > 0 {
-            let token = Token::Text(buffer_rest);
-            self.tokens.push(token);
+
+        if self.buffer.len() > 0 {
+            self.tokens.push(Token::Text(self.buffer.iter().collect()));
         }
     }
 
@@ -85,21 +84,18 @@ impl<T: Iterator<Item = char>> Tokenizer<T> {
         let token_value: String = self.buffer.iter().collect();
 
         if token_value.trim().len() > 0 {
-            let token = match self.curr_context {
+            self.tokens.push(match self.curr_context {
                 TokenizerContext::ExpressionStart => Token::Text(token_value),
                 TokenizerContext::ExpressionEnd => Token::Expression(token_value.trim().into()),
                 TokenizerContext::StatementStart => Token::Text(token_value),
                 TokenizerContext::StatementEnd => Token::Statement(token_value.trim().into()),
                 _ => return,
-            };
-
-            self.tokens.push(token);
+            });
         } else if let (Some(prev_1st_marker), Some(prev_2nd_marker)) = self.prev_markers {
-            let token = Token::Text(format!(
+            self.tokens.push(Token::Text(format!(
                 "{}{}{}{}{}",
                 prev_1st_marker, prev_2nd_marker, token_value, curr_1st_marker, curr_2nd_marker
-            ));
-            self.tokens.push(token);
+            )));
         }
 
         self.buffer = Vec::new();
