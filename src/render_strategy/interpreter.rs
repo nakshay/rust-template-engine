@@ -191,11 +191,7 @@ mod tests {
 
         let combinations_to_test = [
             [None, None, Some(FormsOf::Texts(&texts))],
-            [
-                None,
-                None,
-                Some(FormsOf::Expressions(&expressions)),
-            ],
+            [None, None, Some(FormsOf::Expressions(&expressions))],
             [
                 None,
                 Some(FormsOf::Texts(&texts)),
@@ -242,54 +238,57 @@ mod tests {
         }
     }
 
-    fn make_combinations(scenario: &[Option<FormsOf>; 3], position: usize, template: String, tokens: [Option<Token>; 3]) {
+    fn make_combinations(
+        scenario: &[Option<FormsOf>; 3],
+        position: usize,
+        template: String,
+        tokens: [Option<Token>; 3],
+    ) {
         match &scenario[position] {
-            Some(forms) => {
-                match forms { 
-                    FormsOf::Texts(texts) => {
-                        if position == 0 {
-                            for text in *texts {
-                                let mut tokens = tokens.clone();
-                                tokens[position] = Some(Token::Text(String::from(*text)));
-                                let mut template = template.clone();
-                                template.push_str(*text);
-                                assert_template_has_tokens(template, tokens);
-                            }
-                        } else {
-                            for text in *texts {
-                                let mut tokens = tokens.clone();
-                                tokens[position] = Some(Token::Text(String::from(*text)));
-                                let mut template = template.clone();
-                                template.push_str(*text);
-                                make_combinations(scenario, position - 1, template, tokens);
-                            }
+            Some(forms) => match forms {
+                FormsOf::Texts(texts) => {
+                    if position == 0 {
+                        for text in *texts {
+                            let mut tokens = tokens.clone();
+                            tokens[position] = Some(Token::Text(String::from(*text)));
+                            let mut template = template.clone();
+                            template.push_str(*text);
+                            assert_template_has_tokens(template, tokens);
                         }
-                    },
-                    FormsOf::Expressions(expressions) => {
-                        if position == 0 {
-                            for expression in (*expressions).clone() {
-                                let mut template = template.clone();
-                                template.push_str(expression.0);
-                                let mut tokens = tokens.clone();
-                                tokens[position] = Some(expression.1);
-                                assert_template_has_tokens(template, tokens);
-                            }
-                        } else {
-                            for expression in (*expressions).clone() {
-                                let mut template = template.clone();
-                                template.push_str(expression.0);
-                                let mut tokens = tokens.clone();
-                                tokens[position] = Some(expression.1);
-                                make_combinations(scenario, position - 1, template, tokens);
-                            }
+                    } else {
+                        for text in *texts {
+                            let mut tokens = tokens.clone();
+                            tokens[position] = Some(Token::Text(String::from(*text)));
+                            let mut template = template.clone();
+                            template.push_str(*text);
+                            make_combinations(scenario, position - 1, template, tokens);
                         }
-                    },
+                    }
+                }
+                FormsOf::Expressions(expressions) => {
+                    if position == 0 {
+                        for expression in (*expressions).clone() {
+                            let mut template = template.clone();
+                            template.push_str(expression.0);
+                            let mut tokens = tokens.clone();
+                            tokens[position] = Some(expression.1);
+                            assert_template_has_tokens(template, tokens);
+                        }
+                    } else {
+                        for expression in (*expressions).clone() {
+                            let mut template = template.clone();
+                            template.push_str(expression.0);
+                            let mut tokens = tokens.clone();
+                            tokens[position] = Some(expression.1);
+                            make_combinations(scenario, position - 1, template, tokens);
+                        }
+                    }
                 }
             },
             None => {
                 let tokens = tokens.clone();
                 assert_template_has_tokens(template, tokens);
-            },
+            }
         }
     }
 
@@ -304,12 +303,14 @@ mod tests {
 
                         match last {
                             Some(last) => match (*last).clone() {
-                                Token::Text(mut previous_text) => previous_text.push_str(text.as_str()),
+                                Token::Text(mut previous_text) => {
+                                    previous_text.push_str(text.as_str())
+                                }
                                 _ => expected_tokens.push(token),
                             },
                             None => expected_tokens.push(token),
                         }
-                    },
+                    }
                     Token::Expression(_) => expected_tokens.push(token),
                     Token::Statement(_) => expected_tokens.push(token),
                 }
