@@ -86,10 +86,9 @@ impl<T: Iterator<Item = char>> Tokenizer<T> {
 
         if token_value.trim().len() > 0 {
             let token = match self.curr_context {
-                TokenizerContext::ExpressionStart | TokenizerContext::StatementStart => {
-                    Token::Text(token_value)
-                }
+                TokenizerContext::ExpressionStart => Token::Text(token_value),
                 TokenizerContext::ExpressionEnd => Token::Expression(token_value.trim().into()),
+                TokenizerContext::StatementStart => Token::Text(token_value),
                 TokenizerContext::StatementEnd => Token::Statement(token_value.trim().into()),
                 _ => return,
             };
