@@ -251,36 +251,28 @@ mod tests {
                         for text in *texts {
                             let mut tokens = tokens.clone();
                             tokens[position] = Some(Token::Text(String::from(*text)));
-                            let mut template = template.clone();
-                            template.push_str(*text);
-                            assert_template_has_tokens(template, tokens);
+                            assert_template_has_tokens(format!("{}{}", *text, template), tokens);
                         }
                     } else {
                         for text in *texts {
                             let mut tokens = tokens.clone();
                             tokens[position] = Some(Token::Text(String::from(*text)));
-                            let mut template = template.clone();
-                            template.push_str(*text);
-                            make_combinations(scenario, position - 1, template, tokens);
+                            make_combinations(scenario, position - 1, format!("{}{}", *text, template), tokens);
                         }
                     }
                 }
                 FormsOf::Expressions(expressions) => {
                     if position == 0 {
                         for expression in (*expressions).clone() {
-                            let mut template = template.clone();
-                            template.push_str(expression.0);
                             let mut tokens = tokens.clone();
                             tokens[position] = Some(expression.1);
-                            assert_template_has_tokens(template, tokens);
+                            assert_template_has_tokens(format!("{}{}", expression.0, template), tokens);
                         }
                     } else {
                         for expression in (*expressions).clone() {
-                            let mut template = template.clone();
-                            template.push_str(expression.0);
                             let mut tokens = tokens.clone();
                             tokens[position] = Some(expression.1);
-                            make_combinations(scenario, position - 1, template, tokens);
+                            make_combinations(scenario, position - 1, format!("{}{}", expression.0, template), tokens);
                         }
                     }
                 }
@@ -301,11 +293,11 @@ mod tests {
             .collect();
         let mut tokenizer = Tokenizer::new(template.chars());
         tokenizer.tokenize();
-        let tokens = tokenizer.tokens;
+        let actual_tokens = tokenizer.tokens;
         let message = format!(
             "expected template \"{}\" to have tokens {:?}, but received {:?}",
-            template, expected_tokens, tokens
+            template, expected_tokens, actual_tokens
         );
-        assert_eq!(tokens, expected_tokens, "{}", message);
+        assert_eq!(actual_tokens, expected_tokens, "{}", message);
     }
 }
