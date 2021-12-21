@@ -92,14 +92,16 @@ impl<T: Iterator<Item = char>> Tokenizer<T> {
                 _ => return,
             });
         } else if let (Some(prev_1st_marker), Some(prev_2nd_marker)) = self.prev_markers {
-            self.tokens.push(Token::Text(format!(
-                "{}{}{}{}{}",
-                prev_1st_marker, prev_2nd_marker, token_value, curr_1st_marker, curr_2nd_marker
-            )));
+            if curr_1st_marker != '{' {
+                self.tokens.push(Token::Text(format!(
+                    "{}{}{}{}{}",
+                    prev_1st_marker, prev_2nd_marker, token_value, curr_1st_marker, curr_2nd_marker
+                )));
+            }
         }
 
-        self.buffer = Vec::new();
         self.prev_markers = (Some(curr_1st_marker), Some(curr_2nd_marker));
+        self.buffer = Vec::new();
     }
 }
 
@@ -280,7 +282,6 @@ mod tests {
     }
 
     fn assert_template_has_tokens(template: String, expected_tokens: [Option<Token>; 3]) {
-        println!("{:?} -> \"{}\"", expected_tokens, template);
         let expected_tokens: Vec<Token> = expected_tokens
             .iter()
             .filter(|x| x.is_some())
@@ -294,5 +295,6 @@ mod tests {
             template, expected_tokens, actual_tokens
         );
         assert_eq!(actual_tokens, expected_tokens, "{}", message);
+        println!("template \"{}\" should have tokens {:?} ... ok", template, expected_tokens);
     }
 }
