@@ -54,7 +54,19 @@ impl<T: Iterator<Item = char>> Tokenizer<T> {
     }
 
     fn detect_context(&self) -> TokenizerContext {
-        match self.last_two_chars() {
+        let last_two_chars = {
+            if self.buffer.len() > 1 {
+                let previous = self.buffer.get(self.buffer.len() - 2);
+                let current = self.buffer.last();
+                (previous, current)
+            } else if self.buffer.len() == 1 {
+                (None, self.buffer.last())
+            } else {
+                (None, None)
+            }
+        };
+
+        match last_two_chars {
             (Some('{'), Some('{')) => TokenizerContext::ExpressionStart,
             (Some('}'), Some('}')) => TokenizerContext::ExpressionEnd,
             (Some('{'), Some('%')) => TokenizerContext::StatementStart,
@@ -63,22 +75,9 @@ impl<T: Iterator<Item = char>> Tokenizer<T> {
         }
     }
 
-    fn last_two_chars(&self) -> (Option<&char>, Option<&char>) {
-        if self.buffer.len() > 1 {
-            let previous = self.buffer.get(self.buffer.len() - 2);
-            let current = self.buffer.last();
-            (previous, current)
-        } else if self.buffer.len() == 1 {
-            (None, self.buffer.last())
-        } else {
-            (None, None)
-        }
-    }
-
     fn make_token(&mut self) {
-        let second_marker_char = self.buffer.pop();
-        let first_marker_char = self.buffer.pop();
-        let current_markers = (first_marker_char, second_marker_char);
+        let current_marker_second_char = self.buffer.pop().unwrap();
+        let current_marker_first_char = self.buffer.pop().unwrap();
         let token_value: String = self.buffer.iter().collect();
 
         if token_value.trim().len() > 0 {
@@ -92,10 +91,8 @@ impl<T: Iterator<Item = char>> Tokenizer<T> {
             };
 
             self.tokens.push(token);
-        } else if let (
-            (Some(previous_marker_first_char), Some(previous_marker_second_char)),
-            (Some(current_marker_first_char), Some(current_marker_second_char)),
-        ) = (self.previous_markers, current_markers)
+        } else if let (Some(previous_marker_first_char), Some(previous_marker_second_char)) =
+            self.previous_markers
         {
             let token = Token::Text(format!(
                 "{}{}{}{}{}",
@@ -109,7 +106,10 @@ impl<T: Iterator<Item = char>> Tokenizer<T> {
         }
 
         self.buffer = Vec::new();
-        self.previous_markers = (current_markers.0, current_markers.1);
+        self.previous_markers = (
+            Some(current_marker_first_char),
+            Some(current_marker_second_char),
+        );
     }
 
     fn make_last_token(&mut self) {
@@ -257,7 +257,12 @@ mod tests {
                         for text in *texts {
                             let mut tokens = tokens.clone();
                             tokens[position] = Some(Token::Text(String::from(*text)));
-                            make_combinations(scenario, position - 1, format!("{}{}", *text, template), tokens);
+                            make_combinations(
+                                scenario,
+                                position - 1,
+                                format!("{}{}", *text, template),
+                                tokens,
+                            );
                         }
                     }
                 }
@@ -266,13 +271,21 @@ mod tests {
                         for expression in (*expressions).clone() {
                             let mut tokens = tokens.clone();
                             tokens[position] = Some(expression.1);
-                            assert_template_has_tokens(format!("{}{}", expression.0, template), tokens);
+                            assert_template_has_tokens(
+                                format!("{}{}", expression.0, template),
+                                tokens,
+                            );
                         }
                     } else {
                         for expression in (*expressions).clone() {
                             let mut tokens = tokens.clone();
                             tokens[position] = Some(expression.1);
-                            make_combinations(scenario, position - 1, format!("{}{}", expression.0, template), tokens);
+                            make_combinations(
+                                scenario,
+                                position - 1,
+                                format!("{}{}", expression.0, template),
+                                tokens,
+                            );
                         }
                     }
                 }
