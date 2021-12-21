@@ -292,33 +292,13 @@ mod tests {
         }
     }
 
-    fn assert_template_has_tokens(template: String, received_tokens: [Option<Token>; 3]) {
-        let mut expected_tokens: Vec<Token> = Vec::new();
-
-        for expectation in received_tokens.clone() {
-            if let Some(token) = expectation {
-                match token.clone() {
-                    Token::Text(text) => {
-                        let last = expected_tokens.last();
-
-                        match last {
-                            Some(last) => match (*last).clone() {
-                                Token::Text(mut previous_text) => {
-                                    previous_text.push_str(text.as_str())
-                                }
-                                _ => expected_tokens.push(token),
-                            },
-                            None => expected_tokens.push(token),
-                        }
-                    }
-                    Token::Expression(_) => expected_tokens.push(token),
-                    Token::Statement(_) => expected_tokens.push(token),
-                }
-            }
-        }
-
-        println!("{:?} -> \"{}\"", received_tokens, template);
-
+    fn assert_template_has_tokens(template: String, expected_tokens: [Option<Token>; 3]) {
+        println!("{:?} -> \"{}\"", expected_tokens, template);
+        let expected_tokens: Vec<Token> = expected_tokens
+            .iter()
+            .filter(|x| x.is_some())
+            .map(|x| x.clone().unwrap())
+            .collect();
         let mut tokenizer = Tokenizer::new(template.chars());
         tokenizer.tokenize();
         let tokens = tokenizer.tokens;
