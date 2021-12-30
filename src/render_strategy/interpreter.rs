@@ -1,6 +1,6 @@
 use crate::template::Context;
 
-pub fn interpreter(template: String, context: Context) -> String {
+pub fn interpreter(_template: String, _context: Context) -> String {
     let mut tokenizer = Tokenizer::new("".chars());
     tokenizer.tokenize();
     "".into()
@@ -51,9 +51,7 @@ impl<T: Iterator<Item = char>> Tokenizer<T> {
             }
         }
 
-        if self.buffer.len() > 0 {
-            self.tokens.push(Token::Text(self.buffer.iter().collect()));
-        }
+        self.make_last_token();
     }
 
     fn detect_context(&self) -> TokenizerContext {
@@ -103,6 +101,22 @@ impl<T: Iterator<Item = char>> Tokenizer<T> {
         self.prev_markers = (Some(curr_1st_marker), Some(curr_2nd_marker));
         self.buffer = Vec::new();
     }
+
+    fn make_last_token(&mut self) {
+        let mut rest = String::new();
+
+        if self.curr_context == TokenizerContext::ExpressionStart || self.curr_context == TokenizerContext::StatementStart {
+            rest = format!("{}{}{}", rest, self.prev_markers.0.unwrap(), self.prev_markers.1.unwrap());
+        }
+
+        if self.buffer.len() > 0 {
+            rest = format!("{}", self.buffer.iter().collect::<String>());
+        }
+
+        if rest.len() > 0 {
+            self.tokens.push(Token::Text(rest));
+        }
+    }
 }
 
 #[cfg(test)]
@@ -112,12 +126,12 @@ mod tests {
     #[derive(Debug, PartialEq)]
     enum FormsOf<'a> {
         Expressions(&'a [(&'static str, Token); 52]),
-        Texts(&'a [&'static str; 3]),
+        Texts(&'a [&'static str; 18]),
     }
 
     #[test]
     fn test_many_combinations() {
-        let texts = ["a", "aa", "aaa"];
+        let texts = [" ", "  ", "   ", "a", "ab", "abc", "{", "{{", "{%", "{{{", "{{%", "{%{", "}", "}}", "%}", "%}}", "}%}", "}}}"];
         let expressions = [
             ("{{}}", Token::Text("{{}}".into())),
             ("{{ }}", Token::Text("{{ }}".into())),
@@ -217,6 +231,7 @@ mod tests {
                 Some(FormsOf::Expressions(&expressions)),
             ],
         ];
+
         for combination in combinations_to_test {
             make_combinations(&combination, 2, "".into(), [None, None, None]);
         }
