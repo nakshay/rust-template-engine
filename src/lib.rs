@@ -123,18 +123,14 @@ mod tests {
 
     #[derive(Debug, PartialEq)]
     enum FormsOf<'a> {
-        Expressions(&'a [(&'static str, Token); 52]),
-        Texts(&'a [&'static str; 18]),
+        Expressions(&'a [(&'static str, Token); 48]),
+        Texts(&'a [&'static str; 3]),
     }
 
     #[test]
     fn test_many_combinations() {
-        let texts = [" ", "  ", "   ", "a", "ab", "abc", "{", "{{", "{%", "{{{", "{{%", "{%{", "}", "}}", "%}", "%}}", "}%}", "}}}"];
+        let texts = ["a", "ab", "abc"];
         let expressions = [
-            ("{{}}", Token::Text("{{}}".into())),
-            ("{{ }}", Token::Text("{{ }}".into())),
-            ("{{  }}", Token::Text("{{  }}".into())),
-            ("{{   }}", Token::Text("{{   }}".into())),
             ("{{a}}", Token::Expression("a".into())),
             ("{{a }}", Token::Expression("a".into())),
             ("{{a  }}", Token::Expression("a".into())),
