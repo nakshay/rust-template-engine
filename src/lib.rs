@@ -87,13 +87,6 @@ impl<T: Iterator<Item = char>> Tokenizer<T> {
                 TokenizerContext::StatementEnd => Token::Statement(token_value.trim().into()),
                 _ => return,
             });
-        } else if let (Some(prev_1st_marker), Some(prev_2nd_marker)) = self.prev_markers {
-            if curr_1st_marker != '{' {
-                self.tokens.push(Token::Text(format!(
-                    "{}{}{}{}{}",
-                    prev_1st_marker, prev_2nd_marker, token_value, curr_1st_marker, curr_2nd_marker
-                )));
-            }
         }
 
         self.prev_markers = (Some(curr_1st_marker), Some(curr_2nd_marker));
