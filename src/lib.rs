@@ -116,62 +116,32 @@ mod tests {
 
     #[derive(Debug, PartialEq)]
     enum FormsOf<'a> {
-        Expressions(&'a [(&'static str, Token); 48]),
-        Texts(&'a [&'static str; 3]),
+        Expressions(&'a [(&'static str, Token); 18]),
+        Texts(&'a [&'static str; 2]),
     }
 
     #[test]
     fn test_many_combinations() {
-        let texts = ["a", "ab", "abc"];
+        let texts = ["a", "ab"];
         let expressions = [
             ("{{a}}", Token::Expression("a".into())),
             ("{{a }}", Token::Expression("a".into())),
             ("{{a  }}", Token::Expression("a".into())),
-            ("{{a   }}", Token::Expression("a".into())),
             ("{{ a}}", Token::Expression("a".into())),
             ("{{ a }}", Token::Expression("a".into())),
             ("{{ a  }}", Token::Expression("a".into())),
-            ("{{ a   }}", Token::Expression("a".into())),
             ("{{  a}}", Token::Expression("a".into())),
             ("{{  a }}", Token::Expression("a".into())),
             ("{{  a  }}", Token::Expression("a".into())),
-            ("{{  a   }}", Token::Expression("a".into())),
-            ("{{   a}}", Token::Expression("a".into())),
-            ("{{   a }}", Token::Expression("a".into())),
-            ("{{   a  }}", Token::Expression("a".into())),
-            ("{{   a   }}", Token::Expression("a".into())),
             ("{{aa}}", Token::Expression("aa".into())),
             ("{{aa }}", Token::Expression("aa".into())),
             ("{{aa  }}", Token::Expression("aa".into())),
-            ("{{aa   }}", Token::Expression("aa".into())),
             ("{{ aa}}", Token::Expression("aa".into())),
             ("{{ aa }}", Token::Expression("aa".into())),
             ("{{ aa  }}", Token::Expression("aa".into())),
-            ("{{ aa   }}", Token::Expression("aa".into())),
             ("{{  aa}}", Token::Expression("aa".into())),
             ("{{  aa }}", Token::Expression("aa".into())),
             ("{{  aa  }}", Token::Expression("aa".into())),
-            ("{{  aa   }}", Token::Expression("aa".into())),
-            ("{{   aa}}", Token::Expression("aa".into())),
-            ("{{   aa }}", Token::Expression("aa".into())),
-            ("{{   aa  }}", Token::Expression("aa".into())),
-            ("{{   aa   }}", Token::Expression("aa".into())),
-            ("{{aaa}}", Token::Expression("aaa".into())),
-            ("{{aaa }}", Token::Expression("aaa".into())),
-            ("{{aaa  }}", Token::Expression("aaa".into())),
-            ("{{aaa   }}", Token::Expression("aaa".into())),
-            ("{{ aaa}}", Token::Expression("aaa".into())),
-            ("{{ aaa }}", Token::Expression("aaa".into())),
-            ("{{ aaa  }}", Token::Expression("aaa".into())),
-            ("{{ aaa   }}", Token::Expression("aaa".into())),
-            ("{{  aaa}}", Token::Expression("aaa".into())),
-            ("{{  aaa }}", Token::Expression("aaa".into())),
-            ("{{  aaa  }}", Token::Expression("aaa".into())),
-            ("{{  aaa   }}", Token::Expression("aaa".into())),
-            ("{{   aaa}}", Token::Expression("aaa".into())),
-            ("{{   aaa }}", Token::Expression("aaa".into())),
-            ("{{   aaa  }}", Token::Expression("aaa".into())),
-            ("{{   aaa   }}", Token::Expression("aaa".into())),
         ];
 
         let combinations_to_test = [
@@ -298,5 +268,15 @@ mod tests {
         );
         assert_eq!(actual_tokens, expected_tokens, "{}", message);
         println!("template \"{}\" should have tokens {:?} ... ok", template, expected_tokens);
+    }
+}
+
+struct Text {
+    value: String,
+}
+
+impl Text {
+    fn new(value: String) -> Self {
+        Text { value }
     }
 }
